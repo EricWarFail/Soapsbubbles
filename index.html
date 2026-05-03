@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Spark — Motivational Quotes</title>
+
+  <!-- ============================================================
+       STYLES
+       ============================================================ -->
+  <style>
+    /* ---- Reset & base ---- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ---- CSS custom properties — light mode defaults ---- */
+    :root {
+      --bg:          #f9f7f4;
+      --surface:     #ffffff;
+      --text-main:   #1a1a1a;
+      --text-muted:  #6b6b6b;
+      --accent:      #6c63ff;
+      --accent-dark: #5249d1;
+      --shadow:      rgba(0,0,0,0.08);
+      --radius:      1.25rem;
+      --transition:  0.35s ease;
+    }
+
+    /* ---- Dark mode ---- */
+    [data-theme="dark"] {
+      --bg:          #111118;
+      --surface:     #1e1e2a;
+      --text-main:   #f0f0f5;
+      --text-muted:  #9090aa;
+      --accent:      #9d97ff;
+      --accent-dark: #7b74f5;
+      --shadow:      rgba(0,0,0,0.4);
+    }
+
+    /* ---- Layout ---- */
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 1.5rem;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    /* ---- Theme toggle (top-right) ---- */
+    #theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: var(--surface);
+      border: none;
+      border-radius: 50%;
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--shadow);
+      transition: background var(--transition), transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    #theme-toggle:hover { transform: scale(1.1); }
+
+    /* ---- Quote card ---- */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 24px var(--shadow);
+      padding: 2.5rem 2rem;
+      max-width: 600px;
+      width: 100%;
+      text-align: center;
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+
+    /* ---- Quote text wrapper — handles fade transition ---- */
+    #quote-wrapper {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    #quote-wrapper.fade-out {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    /* ---- Opening quotation mark decoration ---- */
+    .card::before {
+      content: '\201C';
+      display: block;
+      font-size: 4rem;
+      line-height: 1;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+      font-family: Georgia, serif;
+      opacity: 0.6;
+    }
+
+    #quote-text {
+      font-size: clamp(1.15rem, 4vw, 1.45rem);
+      line-height: 1.65;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 1.25rem;
+    }
+
+    #quote-author {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-style: italic;
+      letter-spacing: 0.02em;
+    }
+
+    /* ---- Button row ---- */
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 2rem;
+      padding: 0.65rem 1.4rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, opacity 0.2s;
+    }
+    button:active { transform: scale(0.96); }
+
+    #new-quote-btn {
+      background: var(--accent);
+      color: #fff;
+      min-width: 8rem;
+    }
+    #new-quote-btn:hover { background: var(--accent-dark); }
+    #new-quote-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    #copy-btn {
+      background: transparent;
+      color: var(--accent);
+      border: 2px solid var(--accent);
+    }
+    #copy-btn:hover { background: var(--accent); color: #fff; }
+
+    /* ---- Copy feedback ---- */
+    #copy-feedback {
+      font-size: 0.8rem;
+      color: var(--accent);
+      min-height: 1rem;
+      margin-top: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #copy-feedback.show { opacity: 1; }
+
+    /* ---- Footer ---- */
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+    footer span { opacity: 0.6; }
+  </style>
+</head>
+<body>
+
+  <!-- Theme toggle -->
+  <button id="theme-toggle" aria-label="Toggle dark/light mode">🌙</button>
+
+  <!-- Quote card -->
+  <main class="card" role="main">
+    <div id="quote-wrapper">
+      <p id="quote-text">Loading&hellip;</p>
+      <p id="quote-author"></p>
+    </div>
+
+    <div class="btn-row">
+      <button id="new-quote-btn">New Quote</button>
+      <button id="copy-btn">Copy</button>
+    </div>
+    <p id="copy-feedback" aria-live="polite"></p>
+  </main>
+
+  <!-- Footer / branding -->
+  <footer>
+    <span>✦ Daily Spark — a little push, every day ✦</span>
+  </footer>
+
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script>
+    'use strict';
+
+    // ---- Local quote bank (at least 20) ----
+    const LOCAL_QUOTES = [
+      { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+      { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein" },
+      { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+      { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+      { text: "Everything you've ever wanted is on the other side of fear.", author: "George Addair" },
+      { text: "Success is not final; failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+      { text: "Hardships often prepare ordinary people for an extraordinary destiny.", author: "C.S. Lewis" },
+      { text: "You are never too old to set another goal or to dream a new dream.", author: "C.S. Lewis" },
+      { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+      { text: "Act as if what you do makes a difference. It does.", author: "William James" },
+      { text: "What you get by achieving your goals is not as important as what you become.", author: "Henry David Thoreau" },
+      { text: "Spread love everywhere you go. Let no one ever come to you without leaving happier.", author: "Mother Teresa" },
+      { text: "When you reach the end of your rope, tie a knot in it and hang on.", author: "Franklin D. Roosevelt" },
+      { text: "Don't judge each day by the harvest you reap but by the seeds that you plant.", author: "Robert Louis Stevenson" },
+      { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+      { text: "An unexamined life is not worth living.", author: "Socrates" },
+      { text: "Spread your wings and let the fairy in you fly.", author: "Unknown" },
+      { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+      { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+      { text: "I have learned over the years that when one's mind is made up, this diminishes fear.", author: "Rosa Parks" },
+      { text: "I am not a product of my circumstances. I am a product of my decisions.", author: "Stephen Covey" },
+      { text: "Start where you are. Use what you have. Do what you can.", author: "Arthur Ashe" },
+    ];
+
+    // ---- DOM refs ----
+    const quoteWrapper  = document.getElementById('quote-wrapper');
+    const quoteText     = document.getElementById('quote-text');
+    const quoteAuthor   = document.getElementById('quote-author');
+    const newQuoteBtn   = document.getElementById('new-quote-btn');
+    const copyBtn       = document.getElementById('copy-btn');
+    const copyFeedback  = document.getElementById('copy-feedback');
+    const themeToggle   = document.getElementById('theme-toggle');
+
+    // ---- Track last index so we never repeat back-to-back ----
+    let lastIndex = -1;
+
+    function getRandomLocal() {
+      let idx;
+      do { idx = Math.floor(Math.random() * LOCAL_QUOTES.length); }
+      while (idx === lastIndex && LOCAL_QUOTES.length > 1);
+      lastIndex = idx;
+      return LOCAL_QUOTES[idx];
+    }
+
+    // ---- Render a quote with a fade transition ----
+    function renderQuote({ text, author }) {
+      quoteWrapper.classList.add('fade-out');
+
+      setTimeout(() => {
+        quoteText.textContent   = text;
+        quoteAuthor.textContent = author ? `— ${author}` : '';
+        quoteWrapper.classList.remove('fade-out');
+      }, 320); // matches the CSS transition duration
+    }
+
+    // ---- Pick a new quote (local only; extend here for API) ----
+    async function loadNewQuote() {
+      newQuoteBtn.disabled = true;
+
+      // Optional: swap getRandomLocal() for an API call and fall back on failure
+      const quote = getRandomLocal();
+      renderQuote(quote);
+
+      // Re-enable after the animation completes
+      setTimeout(() => { newQuoteBtn.disabled = false; }, 400);
+    }
+
+    // ---- Copy to clipboard ----
+    async function copyQuote() {
+      const full = `"${quoteText.textContent}" ${quoteAuthor.textContent}`.trim();
+      try {
+        await navigator.clipboard.writeText(full);
+        showCopyFeedback('Copied!');
+      } catch {
+        // Fallback for browsers that block clipboard without HTTPS
+        const ta = document.createElement('textarea');
+        ta.value = full;
+        ta.style.position = 'fixed';
+        ta.style.opacity  = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showCopyFeedback('Copied!');
+      }
+    }
+
+    function showCopyFeedback(msg) {
+      copyFeedback.textContent = msg;
+      copyFeedback.classList.add('show');
+      setTimeout(() => copyFeedback.classList.remove('show'), 1800);
+    }
+
+    // ---- Dark / light mode ----
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+      localStorage.setItem('theme', theme);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    // ---- Init ----
+    (function init() {
+      // Restore saved theme or use system preference
+      const saved  = localStorage.getItem('theme');
+      const system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      applyTheme(saved ?? system);
+
+      // Show a random quote on load
+      loadNewQuote();
+
+      // Wire up buttons
+      newQuoteBtn.addEventListener('click', loadNewQuote);
+      copyBtn.addEventListener('click', copyQuote);
+      themeToggle.addEventListener('click', toggleTheme);
+    })();
+  </script>
+</body>
+</html>
