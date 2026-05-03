@@ -4,8 +4,8 @@ services:
     container_name: seifenblasen
     restart: unless-stopped
     networks:
-      - caddy_net   # must match the network your Caddy container is on
+      - humidor_humidor_net
 
 networks:
-  caddy_net:
+  humidor_humidor_net:
     external: true
