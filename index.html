@@ -14,26 +14,33 @@
 
     /* ---- CSS custom properties — light mode defaults ---- */
     :root {
-      --bg:          #f9f7f4;
-      --surface:     #ffffff;
+      --surface:     #ffffffcc;
       --text-main:   #1a1a1a;
-      --text-muted:  #6b6b6b;
+      --text-muted:  #555;
       --accent:      #6c63ff;
       --accent-dark: #5249d1;
-      --shadow:      rgba(0,0,0,0.08);
+      --shadow:      rgba(0,0,0,0.12);
       --radius:      1.25rem;
       --transition:  0.35s ease;
     }
 
     /* ---- Dark mode ---- */
     [data-theme="dark"] {
-      --bg:          #111118;
-      --surface:     #1e1e2a;
+      --surface:     rgba(20,20,35,0.75);
       --text-main:   #f0f0f5;
-      --text-muted:  #9090aa;
-      --accent:      #9d97ff;
-      --accent-dark: #7b74f5;
-      --shadow:      rgba(0,0,0,0.4);
+      --text-muted:  #aaa;
+      --accent:      #b8b3ff;
+      --accent-dark: #9d97ff;
+      --shadow:      rgba(0,0,0,0.45);
+    }
+
+    /* ---- Animated blob background ---- */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
     }
 
     /* ---- Layout ---- */
@@ -43,7 +50,6 @@
 
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
       color: var(--text-main);
       display: flex;
       flex-direction: column;
@@ -51,7 +57,8 @@
       justify-content: center;
       min-height: 100dvh;
       padding: 1.5rem;
-      transition: background var(--transition), color var(--transition);
+      position: relative;
+      z-index: 1;
     }
 
     /* ---- Theme toggle (top-right) ---- */
@@ -78,13 +85,17 @@
     /* ---- Quote card ---- */
     .card {
       background: var(--surface);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border-radius: var(--radius);
-      box-shadow: 0 4px 24px var(--shadow);
+      box-shadow: 0 8px 32px var(--shadow);
       padding: 2.5rem 2rem;
       max-width: 600px;
       width: 100%;
       text-align: center;
       transition: background var(--transition), box-shadow var(--transition);
+      position: relative;
+      z-index: 2;
     }
 
     /* ---- Quote text wrapper — handles fade transition ---- */
@@ -179,10 +190,18 @@
       letter-spacing: 0.04em;
       text-align: center;
     }
-    footer span { opacity: 0.6; }
+    footer span { opacity: 0.8; }
+
+    footer {
+      position: relative;
+      z-index: 2;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Animated background -->
+  <canvas id="bg-canvas"></canvas>
 
   <!-- Theme toggle -->
   <button id="theme-toggle" aria-label="Toggle dark/light mode">🌙</button>
@@ -342,12 +361,77 @@
       document.documentElement.setAttribute('data-theme', theme);
       themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
       localStorage.setItem('theme', theme);
+      window.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
     }
 
     function toggleTheme() {
       const current = document.documentElement.getAttribute('data-theme') || 'light';
       applyTheme(current === 'dark' ? 'light' : 'dark');
     }
+
+    // ---- Blob background animation ----
+    (function initBlobs() {
+      const canvas = document.getElementById('bg-canvas');
+      const ctx    = canvas.getContext('2d');
+
+      const LIGHT_COLORS = ['#ff9de2','#ffb347','#ffe066','#8be8ff','#a0f0a0','#c77dff','#ff6b6b','#56cfe1'];
+      const DARK_COLORS  = ['#7b2d8b','#1a4a8a','#0a6640','#8b3a1a','#4a1a8b','#1a6b6b','#8b1a4a','#2d5a1a'];
+
+      let colors = LIGHT_COLORS;
+
+      function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      // Each blob has a position, velocity, radius, and color
+      const blobs = Array.from({ length: 7 }, (_, i) => ({
+        x:    Math.random() * canvas.width,
+        y:    Math.random() * canvas.height,
+        vx:   (Math.random() - 0.5) * 0.6,
+        vy:   (Math.random() - 0.5) * 0.6,
+        r:    120 + Math.random() * 180,
+        ci:   i % colors.length,
+      }));
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Soft base fill
+        ctx.fillStyle = document.documentElement.getAttribute('data-theme') === 'dark'
+          ? '#0d0d1a' : '#f0eeff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        blobs.forEach(b => {
+          const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+          grad.addColorStop(0, colors[b.ci] + 'cc');
+          grad.addColorStop(1, colors[b.ci] + '00');
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          // Bounce off edges
+          b.x += b.vx;
+          b.y += b.vy;
+          if (b.x < -b.r)             b.x = canvas.width  + b.r;
+          if (b.x > canvas.width + b.r) b.x = -b.r;
+          if (b.y < -b.r)             b.y = canvas.height + b.r;
+          if (b.y > canvas.height + b.r) b.y = -b.r;
+        });
+
+        requestAnimationFrame(draw);
+      }
+
+      draw();
+
+      // Update colors when theme changes
+      window.addEventListener('themechange', e => {
+        colors = e.detail === 'dark' ? DARK_COLORS : LIGHT_COLORS;
+      });
+    })();
 
     // ---- Init ----
     (function init() {
