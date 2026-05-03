@@ -1,0 +1,13 @@
+services:
+  seifenblasen:
+    build: .
+    container_name: seifenblasen
+    restart: unless-stopped
+    ports:
+      - "8081:80"   # change 8081 to any free port on your VPS
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    external: true   # shared network with your reverse proxy (e.g. nginx-proxy, Traefik)
