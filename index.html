@@ -63,9 +63,8 @@
     }
 
     /* ---- Theme toggle (top-right) ---- */
-    #theme-toggle {
+    #theme-toggle, #share-btn {
       position: fixed;
-      top: 1rem;
       right: 1rem;
       background: var(--surface);
       border: none;
@@ -81,7 +80,9 @@
       justify-content: center;
       z-index: 100;
     }
-    #theme-toggle:hover { transform: scale(1.1); }
+    #theme-toggle { top: 1rem; }
+    #share-btn    { top: 4rem; }
+    #theme-toggle:hover, #share-btn:hover { transform: scale(1.1); }
 
     /* ---- Quote card ---- */
     .card {
@@ -207,6 +208,9 @@
   <!-- Theme toggle -->
   <button id="theme-toggle" aria-label="Toggle dark/light mode">🌙</button>
 
+  <!-- Share button -->
+  <button id="share-btn" aria-label="Share quote">📤</button>
+
   <!-- Quote card -->
   <main class="card" role="main">
     <div id="quote-wrapper">
@@ -296,6 +300,7 @@
     const copyBtn       = document.getElementById('copy-btn');
     const copyFeedback  = document.getElementById('copy-feedback');
     const themeToggle   = document.getElementById('theme-toggle');
+    const shareBtn      = document.getElementById('share-btn');
 
     // ---- Track last index so we never repeat back-to-back ----
     let lastIndex = -1;
@@ -355,6 +360,25 @@
       copyFeedback.textContent = msg;
       copyFeedback.classList.add('show');
       setTimeout(() => copyFeedback.classList.remove('show'), 1800);
+    }
+
+    // ---- Share quote ----
+    async function shareQuote() {
+      const shareText = `"${quoteText.textContent}" ${quoteAuthor.textContent}`.trim();
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Daily Spark', text: shareText, url: window.location.href });
+        } catch (e) {
+          if (e.name !== 'AbortError') showCopyFeedback('Share failed');
+        }
+      } else {
+        try {
+          await navigator.clipboard.writeText(shareText);
+          showCopyFeedback('Copied for sharing!');
+        } catch {
+          showCopyFeedback('Share not supported');
+        }
+      }
     }
 
     // ---- Dark / light mode ----
@@ -447,6 +471,7 @@
       // Wire up buttons
       newQuoteBtn.addEventListener('click', loadNewQuote);
       copyBtn.addEventListener('click', copyQuote);
+      shareBtn.addEventListener('click', shareQuote);
       themeToggle.addEventListener('click', toggleTheme);
     })();
   </script>
